@@ -38,7 +38,21 @@ questions:
     tags:
       - app:postgres
     targets:
-      - install_postgresdb_user_secret.clusterSecret.sourceSecretName
+      - install_postgres_user_secret.clusterSecret.sourceSecretName
+  - type: secret
+    dataType: password
+    name: redis
+    label: User secret
+    group: Redis
+    order: 1
+    required:
+      username: true
+    default:
+      username: redis
+    tags:
+      - app:postgres
+    targets:
+      - install_redis_user_secret.clusterSecret.sourceSecretName
   - type: pipeline
     dataType: string
     label: Postgres database
@@ -48,32 +62,6 @@ questions:
     order: 2
     targets:
       - deploy_application.deployment.values.postgres.postgresDatabase
-  - type: pipeline
-    key: postgres_root_password
-    group: Postgres
-    dataType: boolean
-    label: Customize Postgres root user
-    default: false
-    order: 3
-  - type: secret
-    dataType: password
-    name: postgres-root
-    label: Root secret
-    group: Postgres
-    order: 4
-    required: true
-    default:
-      username: root
-    disabled:
-      username: true
-    tags:
-      - app:postgres
-    targets:
-      - install_postgres_root_secret.clusterSecret.sourceSecretName
-    showIf:
-      properties:
-        postgres_root_password:
-          const: true
   - type: pipeline
     key: application_resources
     group: Resources

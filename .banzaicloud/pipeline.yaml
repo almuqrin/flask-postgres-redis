@@ -1,0 +1,237 @@
+name: test
+workspace:
+  base: /test
+
+cluster:
+  action: EnsureCluster
+  secret:
+    name: eks-admin
+  name: eks-cicd-cluster-1
+  cloud: amazon
+  location: eu-central-1
+
+
+pipeline:
+  
+  dep_redis:
+    parallel: true
+    image: banzaicloud/ci-pipeline-client:latest
+    action: CreateDeployment
+    deployment:
+      name: stable/redis
+      releaseName: t-gamma-cache
+      namespace: test
+      values:
+        redisPort: 6379
+        password: just_another_password
+        image:
+          fullnameOverride: t-gamma-cache
+
+  dep_postgres:
+    image: banzaicloud/ci-pipeline-client:latest
+    action: CreateDeployment 
+    deployment:
+      name: stable/postgresql
+      releaseName: t-gamma-db
+      namespace: test
+      values:
+        postgresqlUsername: postgres
+        postgresqlPassword: just_another_password
+        postgresqlDatabase: gamma
+        image:
+          fullnameOverride: t-gamma-db
+
+  test:
+    image: python:3.6
+    secretFrom:
+      SNAPCHAT_AD_ACCOUNT:
+          name: mozn-snapchat
+          keyRef: SNAPCHAT_AD_ACCOUNT
+      SNAPCHAT_CLIENT_ID:
+        name: mozn-snapchat
+        keyRef: SNAPCHAT_CLIENT_ID
+      SNAPCHAT_CLIENT_SECRET:
+        name: mozn-snapchat
+        keyRef: SNAPCHAT_CLIENT_SECRET
+      SNAPCHAT_API_VERSION:
+        name: mozn-snapchat
+        keyRef: SNAPCHAT_API_VERSION
+      SNAPCHAT_BASE_URL:
+        name: mozn-snapchat
+        keyRef: SNAPCHAT_BASE_URL
+      SNAPCHAT_AUTHORIZATION_BASE_URL:
+        name: mozn-snapchat
+        keyRef: SNAPCHAT_AUTHORIZATION_BASE_URL
+      SNAPCHAT_TOKEN_URL:
+        name: mozn-snapchat
+        keyRef: SNAPCHAT_TOKEN_URL
+      SNAPCHAT_REFRESH_URL:
+        name: mozn-snapchat
+        keyRef: SNAPCHAT_REFRESH_URL
+      SNAPCHAT_REDIRECT_URL:
+        name: mozn-snapchat
+        keyRef: SNAPCHAT_REDIRECT_URL
+      SNAPCHAT_SCOPE:
+        name: mozn-snapchat
+        keyRef: SNAPCHAT_SCOPE
+      FACEBOOK_API_VERSION:
+        name: mozn-facebook
+        keyRef: FACEBOOK_API_VERSION
+      FACEBOOK_BASE_URL:
+        name: mozn-facebook
+        keyRef: FACEBOOK_BASE_URL
+      FACEBOOK_CLIENT_ID:
+        name: mozn-facebook
+        keyRef: FACEBOOK_CLIENT_ID 
+      FACEBOOK_CLIENT_SECRET:
+        name: mozn-facebook
+        keyRef: FACEBOOK_CLIENT_SECRET 
+      FACEBOOK_TOKEN_URL:
+        name: mozn-facebook
+        keyRef: FACEBOOK_TOKEN_URL
+      FACEBOOK_AUTHORIZATION_BASE_URL:
+        name: mozn-facebook
+        keyRef: FACEBOOK_AUTHORIZATION_BASE_URL
+      FACEBOOK_SCOPE:
+        name: mozn-facebook
+        keyRef: FACEBOOK_SCOPE
+      TWITTER_API_VERSION:
+        name: mozn-twitter
+        keyRef: TWITTER_API_VERSION
+      TWITTER_BASE_URL:
+        name: mozn-twitter
+        keyRef: TWITTER_BASE_URL
+      TWITTER_CLIENT_KEY:
+        name: mozn-twitter
+        keyRef: TWITTER_CLIENT_KEY
+      TWITTER_CLIENT_SECRET:
+        name: mozn-twitter
+        keyRef: TWITTER_CLIENT_SECRET
+      TWITTER_REQUEST_TOKEN_URL:
+        name: mozn-twitter
+        keyRef: TWITTER_REQUEST_TOKEN_URL
+      TWITTER_AUTHORIZATION_BASE_URL:
+        name: mozn-twitter
+        keyRef: TWITTER_AUTHORIZATION_BASE_URL
+      TWITTER_ACCESS_TOKEN_URL:
+        name: mozn-twitter
+        keyRef: TWITTER_ACCESS_TOKEN_URL
+      DATABRICKS_DOMAIN:
+        name: mozn-databricks
+        keyRef: DATABRICKS_DOMAIN
+      DATABRICKS_TOKEN:
+        name: mozn-databricks
+        keyRef: DATABRICKS_TOKEN
+      S3_BUCKET_PATH:
+        name: mozn-s3-buckets
+        keyRef: gamma
+      POSTGRES_DB:
+        name: mozn-gamma
+        keyRef: POSTGRES_DB
+      POSTGRES_PORT:
+        name: mozn-gamma
+        keyRef: POSTGRES_PORT
+      POSTGRES_USER:
+        name: mozn-gamma
+        keyRef: POSTGRES_USER
+      POSTGRES_PWD:
+        name: mozn-gamma
+        keyRef: POSTGRES_PWD
+      REDIS_DB_N:
+        name: mozn-gamma
+        keyRef: REDIS_DB_N
+      REDIS_PORT:
+        name: mozn-gamma
+        keyRef: REDIS_PORT
+      REDIS_USER:
+        name: mozn-gamma
+        keyRef: REDIS_USER
+      FLASK_APP:
+        name: mozn-gamma
+        keyRef: FLASK_APP
+    environment:
+      # @TODO: we need to explore how to make those variables configurable based on environement
+      # We might need three redirection based on envs. dev, stagging, and prod
+      - SNAPCHAT_REDIRECT_URL=https://127.0.0.1:8999/account/connect/snapchat
+      - FACEBOOK_REDIRECT_URI=https://localhost:8999/account/connect/facebook
+      - TWITTER_CALLBACK_URI=https://localhost:8999/account/connect/twitter
+      # application related envs. variables
+      - POSTGRES_HOST=t-gamma-db-postgresql.test
+      - REDIS_HOST=t-gamma-cache-redis-master.test
+      - POSTGRES_PWD=just_another_password
+      - REDIS_PASSWORD=just_another_password
+      - SECRET_KEY=just_another_secret_key
+      - FLASK_ENV=development
+      - TESTING=True
+      - FLASK_DEBUG=True
+    commands:
+      - pip install --no-cache -r requirements.txt
+      - cd backend
+      - flask db upgrade
+      - pytest
+
+  del_redis:
+    image: banzaicloud/ci-pipeline-client:latest
+    action: DeleteDeployment
+    deployment:
+      releaseName: t-gamma-cache
+      namespace: test
+
+  del_postgres:
+    image: banzaicloud/ci-pipeline-client:latest
+    action: DeleteDeployment 
+    deployment:
+      releaseName: t-gamma-db
+      namespace: test
+
+trigger:
+  events:
+    - [ pull_request ]
+      
+---
+workspace:
+  base: /backend
+name: deploy
+
+cluster:
+  action: EnsureCluster
+  secret:
+    name: eks-admin
+  name: eks-cicd-cluster-1
+  cloud: amazon
+  location: eu-central-1
+
+pipeline:
+    redis:
+      image: banzaicloud/ci-pipeline-client:latest
+      action: EnsureDeployment
+      deployment:
+        name: stable/redis
+        releaseName: p-gamma-cache
+        namespace: prod
+        values:
+          redisPort: 6379
+          password: just_another_password
+          image:
+            fullnameOverride: p-gamma-cache
+  
+    postgres:
+      image: banzaicloud/ci-pipeline-client:latest
+      action: EnsureDeployment 
+      deployment:
+        name: stable/postgresql
+        releaseName: p-gamma-db
+        namespace: prod
+        values:
+          postgresqlUsername: postgres
+          postgresqlPassword: just_another_password
+          postgresqlDatabase: gamma
+          image:
+            fullnameOverride: p-gamma-db
+
+    
+trigger:
+  branches:
+    - master
+  events:
+    - [ tag, deployment ]

@@ -50,7 +50,7 @@ questions:
     default:
       username: redis
     tags:
-      - app:postgres
+      - app:redis
     targets:
       - install_redis_user_secret.clusterSecret.sourceSecretName
   - type: pipeline

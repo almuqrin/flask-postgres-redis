@@ -39,6 +39,16 @@ questions:
       - app:postgres
     targets:
       - install_postgres_user_secret.clusterSecret.sourceSecretName
+  - type: pipeline
+    dataType: string
+    label: Postgres database
+    default: flask-application
+    group: Postgres
+    required: true
+    order: 2
+    targets:
+      - deploy_application.deployment.values.postgres.postgresDatabase
+
   - type: secret
     dataType: password
     name: redis
@@ -53,15 +63,17 @@ questions:
       - app:redis
     targets:
       - install_redis_user_secret.clusterSecret.sourceSecretName
+    
   - type: pipeline
     dataType: string
-    label: Postgres database
-    default: flask-application
+    label: Redis database number
+    default: 0
     group: Postgres
     required: true
     order: 2
     targets:
-      - deploy_application.deployment.values.postgres.postgresDatabase
+      - deploy_application.deployment.values.redis.redisDatabase
+
   - type: pipeline
     key: application_resources
     group: Resources

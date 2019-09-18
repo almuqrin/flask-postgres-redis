@@ -4,10 +4,9 @@ pipeline:
     action: EnsureCluster
 
   test:
-    image: node:10-slim
+    image: python:3.6
     commands:
-      - npm ci
-      - npm test
+      - make test
 
   build_image:
     image: banzaicloud/kaniko-plugin

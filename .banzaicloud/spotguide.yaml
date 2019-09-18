@@ -1,7 +1,7 @@
 apiVersion: v1
-name: 'Flask with Postgres databases and redis for cache'
+name: 'Flask with Postgres database and redis cache'
 description: 'Spotguide for Flask applications with Postgres database and redis for cache'
-tags: ['Flask', 'Postgres', 'Redis', 'Application']
+tags: ['Flask', 'Postgres', 'Redis', 'application']
 resources:
   sumCpu: 3
   sumMem: 4
@@ -27,41 +27,82 @@ questions:
       - build_image.secretFrom.DOCKER_PASSWORD.name
   - type: secret
     dataType: password
-    name: postgres
+    name: mongodb
     label: User secret
-    group: Postgres
+    group: MongoDB
     order: 1
     required:
       username: true
     default:
-      username: postgres
+      username: username
     tags:
-      - app:postgres
+      - app:mongodb
     targets:
-      - install_postgres_user_secret.clusterSecret.sourceSecretName
-  - type: secret
-    dataType: password
-    name: redis
-    label: User secret
-    group: Redis
-    order: 1
-    required:
-      username: true
-    default:
-      username: redis
-    tags:
-      - app:redis
-    targets:
-      - install_redis_user_secret.clusterSecret.sourceSecretName
+      - install_mongodb_user_secret.clusterSecret.sourceSecretName
   - type: pipeline
     dataType: string
-    label: Postgres database
-    default: flask-application
-    group: Postgres
+    label: MongoDB database
+    default: node-application
+    group: MongoDB
     required: true
     order: 2
     targets:
-      - deploy_application.deployment.values.postgres.postgresDatabase
+      - deploy_application.deployment.values.mongodb.mongodbDatabase
+  - type: pipeline
+    key: mongodb_root_password
+    group: MongoDB
+    dataType: boolean
+    label: Customize MongoDB root user
+    default: false
+    order: 3
+  - type: secret
+    dataType: password
+    name: mongodb-root
+    label: Root secret
+    group: MongoDB
+    order: 4
+    required: true
+    default:
+      username: root
+    disabled:
+      username: true
+    tags:
+      - app:mongodb
+    targets:
+      - install_mongodb_root_secret.clusterSecret.sourceSecretName
+    showIf:
+      properties:
+        mongodb_root_password:
+          const: true
+  - type: pipeline
+    key: mongodb_replicaset
+    group: MongoDB
+    dataType: boolean
+    label: Enable MongoDB replica set
+    default: true
+    order: 5
+    targets:
+      - deploy_application.deployment.values.mongodb.replicaSet.enabled
+  - type: secret
+    dataType: password
+    label: Replica set key secret
+    name: mongodb-replicaset-key
+    group: MongoDB
+    order: 6
+    default:
+      username: key
+    hidden:
+      username: true
+    disabled:
+      username: true
+    tags:
+      - app:mongodb
+    targets:
+      - install_mongodb_replica_set_key_secret.clusterSecret.sourceSecretName
+    showIf:
+      properties:
+        mongodb_replicaset:
+          const: true
   - type: pipeline
     key: application_resources
     group: Resources
@@ -105,7 +146,7 @@ questions:
     default: 250m
     group: Resources
     pattern: ^\d+(\.?\d+|m)?$
-    description: Minimum amount of CPU the Flask container needs
+    description: Minimum amount of CPU the Node.js container needs
     required: true
     order: 4
     targets:
@@ -120,7 +161,7 @@ questions:
     default: 500m
     group: Resources
     pattern: ^\d+(\.?\d+|m)?$
-    description: Maximum amount of CPU the Flask container can use
+    description: Maximum amount of CPU the Node.js container can use
     required: true
     order: 5
     targets:

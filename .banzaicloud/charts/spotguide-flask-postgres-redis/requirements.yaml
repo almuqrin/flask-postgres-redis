@@ -9,11 +9,11 @@ dependencies:
   version: '>=0.0.8'
   alias: pipeline-ingress
   condition: pipeline-ingress.enabled
-- name: postgres
+- name: postgresql
   repository: "file://../postgresql"
   version: 5.0.0
-  alias: postgres
-  condition: postres.enabled
+  alias: postgresql
+  condition: postgresql.enabled
 - name: redis
   repository: "file://../redis"
   version: 8.0.18

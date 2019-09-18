@@ -5,7 +5,7 @@ clean:
 	find . -type f -name '*.log' -delete
 
 system-packages:
-	sudo apt install python-pip -y
+	brew install python-pip -y
 
 python-packages:
 	pip install -r requirements.txt

@@ -38,7 +38,7 @@ questions:
     tags:
       - app:postgres
     targets:
-      - install_postgres_user_secret.clusterSecret.sourceSecretName
+      - install_postgresql_user_secret.clusterSecret.sourceSecretName
   - type: pipeline
     dataType: string
     label: Postgres database
@@ -47,8 +47,7 @@ questions:
     required: true
     order: 2
     targets:
-      - deploy_application.deployment.values.postgres.postgresDatabase
-
+      - deploy_application.deployment.values.postgresql.postgresqlDatabase
   - type: secret
     dataType: password
     name: redis
@@ -63,17 +62,15 @@ questions:
       - app:redis
     targets:
       - install_redis_user_secret.clusterSecret.sourceSecretName
-    
   - type: pipeline
     dataType: string
     label: Redis database number
     default: 0
-    group: Postgres
+    group: Redis
     required: true
     order: 2
     targets:
       - deploy_application.deployment.values.redis.redisDatabase
-
   - type: pipeline
     key: application_resources
     group: Resources

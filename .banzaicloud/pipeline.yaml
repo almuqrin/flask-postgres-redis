@@ -84,7 +84,7 @@ pipeline:
           metrics:
             enabled: false
           existingSecret: '{{ .CICD_REPO_NAME }}-postgresql'
-          # postgresDatabase:
+          # postgresqlDatabase:
         redis:
           metrics:
             enabled: false

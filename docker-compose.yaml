@@ -1,19 +1,14 @@
 version: '3.7'
-
 services:
-
   backend:
     image: gamma-audiences-backend:latest
-    enviorement:
+    environment:
       - FLASK_APP=manage.py
     build:
       context: .
       dockerfile: Dockerfile
-    expose:
-      - "5000"
-    command:  
-      - cd /usr/src/app
-      - make run
+    ports:
+      - 5000:5000
     depends_on:
       - postgres
       - redis
@@ -28,53 +23,52 @@ services:
       - web_nw
       - db_nw
 
-    redis:
-      image: redis:latest
-      environment:
-        - REDIS_HOST=redis
-        - REDIS_PORT=6379
-        - REDIS_PASSWORD=just_another_password
-        - REDIS_USER=user
-        - REDIS_DB_N=0
-      volumes:
-        - "db-redis:/data"
-      expose:
-        - "6379"
-      command:
-        - exec redis-server --requirepass \"$REDIS_PASSWORD\"
-      restart: on-failure:3
-      networks:
-        - db_nw
+  redis:
+    image: redis:latest
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=just_another_password
+      - REDIS_USER=user
+      - REDIS_DB_N=0
+    volumes:
+      - "db-redis:/data"
+    expose:
+      - "6379"
+    command: ["sh", "-c", "exec redis-server --requirepass \"$REDIS_PASSWORD\""]
+    restart: on-failure:3
+    networks:
+      - db_nw
   
-    postgres:
-      image: redis:latest
-      environment:
-        - POSTGRES_HOST=postgres
-        - POSTGRES_USER=postgres
-        - POSTGRES_PWD=''
-        - POSTGRES_PORT=5432
-        - POSTGRES_DB=gamma  
-      volumes:
-        - db-data:/var/lib/postgresql/data
-      ports:
-        - "5432:5432"
-      restart: on-failure:3
-      networks:
-        - db_nw
+  postgres:
+    image: redis:latest
+    environment:
+      - POSTGRES_HOST=postgres
+      - POSTGRES_USER=postgres
+      - POSTGRES_PWD=''
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=gamma  
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    restart: on-failure:3
+    networks:
+      - db_nw
 
-    jaeger:
-      image: jaegertracing/all-in-one
-      restart: always
-      ports:
-        - 5775:5775/udp
-        - 6831:6831/udp
-        - 6832:6832/udp
-        - 5778:5778
-        - 16686:16686
-        - 14268:14268
-        - 9411:9411
-      environment:
-        - COLLECTOR_ZIPKIN_HTTP_PORT=9411
+  jaeger:
+    image: jaegertracing/all-in-one
+    restart: always
+    ports:
+      - 5775:5775/udp
+      - 6831:6831/udp
+      - 6832:6832/udp
+      - 5778:5778
+      - 16686:16686
+      - 14268:14268
+      - 9411:9411
+    environment:
+      - COLLECTOR_ZIPKIN_HTTP_PORT=9411
 
 volumes:
   db-data:
